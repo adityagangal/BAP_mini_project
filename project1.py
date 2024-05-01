@@ -228,8 +228,27 @@ import plotly.express as px
 from dash import Dash, html, dcc
 import plotly.graph_objs as go
 
+data = pd.read_csv('final_csv.csv')
+
+num_cols = ['CGPA-1','CGPA-2','CGPA-3','CGPA-4','CGPA-5','CGPA-6','CGPA-7']
+data2 = data[num_cols]
+# Convert object features to float, skipping NaN values
+for col in num_cols:
+    data2[col] = pd.to_numeric(data2[col], errors='coerce')
+
+# Create a distribution plot for each feature
+plt.figure(figsize=(16, 10))
+
+for feature in num_cols:
+    sns.displot(data2, x=feature, kde=True, color="skyblue", rug=True, bins=30)
+    plt.title(f"Distribution of {feature}")
+    plt.xlabel(feature)
+    plt.ylabel("Density")
+    plt.show()
+
+
 # Load data
-df = pd.read_csv('/content/final_csv.csv')
+df = pd.read_csv('final_csv.csv')
 
 # Convert CGPA columns to numeric
 cgpa_cols = df.filter(like='CGPA').apply(pd.to_numeric, errors='coerce')
@@ -278,6 +297,15 @@ highest_cgpa_fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
 
 # Extract columns containing 'PASS/FAIL' in their name
 pass_fail_columns = [col for col in df.columns if 'PASS/FAIL' in col]
+# Visualization : Violin Plot of CGPA Distribution
+fig_violin_plot = px.violin(df.melt(value_vars=numeric_cols), y='value',
+                             facet_col='variable', box=True, title='CGPA Distribution (Violin Plot)')
+
+cgpa_cols = df.filter(like='CGPA').apply(pd.to_numeric, errors='coerce')
+df[cgpa_cols.columns] = cgpa_cols
+
+# Calculate average CGPA for each student
+df['Average_CGPA'] = df.filter(like='CGPA').mean(axis=1)
 
 # Initialize the Dash app
 app = Dash(__name__)
@@ -333,19 +361,63 @@ app.layout = html.Div([
             ) for i, column in enumerate(pass_fail_columns, start=1)
         ])
     ]),
-
-    # Distribution Plots for CGPA Columns
+    #Visualization : Violin Plot of CGPA Distribution
     html.Div([
-        html.H1('Distribution Plots for CGPA Columns', style={'text-align': 'center'}),
-        html.Div([
-            dcc.Graph(
-                id=f'distribution-plot-{i}',
-                figure=px.histogram(df, x=col, nbins=30, color_discrete_sequence=['skyblue'])
-            ) for i, col in enumerate(cgpa_cols.columns, start=1)
-        ])
+        html.H2('CGPA Distribution (Violin Plot)'),
+        dcc.Graph(
+            id='cgpa-violin-plot',
+            figure=fig_violin_plot
+        )
+    ])
+]),
+     # Define the layout of the app
+    html.Div([
+        html.H1("Student Performance Profiles"),
+
+        # Dropdown to select student
+        html.Label('Select Student:'),
+        dcc.Dropdown(
+            id='student-dropdown',
+            options=[{'label': student, 'value': student} for student in df.index],
+            value=df.index[0]
+        ),
+
+        # Performance metrics for selected student
+        html.Div(id='performance-metrics'),
+
+        # Performance trends for selected student
+        dcc.Graph(id='performance-trends')
     ])
 ])
+
+# Callback to update performance metrics and trends based on selected student
+@app.callback(
+    [dependencies.Output('performance-metrics', 'children'),
+     dependencies.Output('performance-trends', 'figure')],
+    [dependencies.Input('student-dropdown', 'value')]
+)
+def update_student_profile(selected_student):
+    # Filter data for selected student
+    student_data = df.loc[selected_student]
+
+    # Performance metrics
+    metrics = html.Div([
+        html.H3(f"Student: {selected_student}"),
+        html.P(f"Average CGPA: {student_data['Average_CGPA']:.2f}"),
+    ])
+
+    # Performance trends
+    trends_fig = px.line(
+        x=df.columns[::2],  # Semesters
+        y=student_data[::2],  # CGPA values
+        title=f"CGPA Trends for {selected_student}",
+        labels={'x': 'Semester', 'y': 'CGPA'}
+    )
+
+    return metrics, trends_fig
 
 # Run the app
 if __name__ == '__main__':
     app.run_server(debug=True)
+
+
