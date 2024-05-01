@@ -228,27 +228,8 @@ import plotly.express as px
 from dash import Dash, html, dcc
 import plotly.graph_objs as go
 
-data = pd.read_csv('final_csv.csv')
-
-num_cols = ['CGPA-1','CGPA-2','CGPA-3','CGPA-4','CGPA-5','CGPA-6','CGPA-7']
-data2 = data[num_cols]
-# Convert object features to float, skipping NaN values
-for col in num_cols:
-    data2[col] = pd.to_numeric(data2[col], errors='coerce')
-
-# Create a distribution plot for each feature
-plt.figure(figsize=(16, 10))
-
-for feature in num_cols:
-    sns.displot(data2, x=feature, kde=True, color="skyblue", rug=True, bins=30)
-    plt.title(f"Distribution of {feature}")
-    plt.xlabel(feature)
-    plt.ylabel("Density")
-    plt.show()
-
-
 # Load data
-df = pd.read_csv('final_csv.csv')
+df = pd.read_csv('/content/final_csv.csv')
 
 # Convert CGPA columns to numeric
 cgpa_cols = df.filter(like='CGPA').apply(pd.to_numeric, errors='coerce')
@@ -297,9 +278,6 @@ highest_cgpa_fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
 
 # Extract columns containing 'PASS/FAIL' in their name
 pass_fail_columns = [col for col in df.columns if 'PASS/FAIL' in col]
-# Visualization : Violin Plot of CGPA Distribution
-fig_violin_plot = px.violin(df.melt(value_vars=numeric_cols), y='value',
-                             facet_col='variable', box=True, title='CGPA Distribution (Violin Plot)')
 
 # Initialize the Dash app
 app = Dash(__name__)
@@ -355,13 +333,16 @@ app.layout = html.Div([
             ) for i, column in enumerate(pass_fail_columns, start=1)
         ])
     ]),
-    # Visualization : Violin Plot of CGPA Distribution
+
+    # Distribution Plots for CGPA Columns
     html.Div([
-        html.H2('CGPA Distribution (Violin Plot)'),
-        dcc.Graph(
-            id='cgpa-violin-plot',
-            figure=fig_violin_plot
-        )
+        html.H1('Distribution Plots for CGPA Columns', style={'text-align': 'center'}),
+        html.Div([
+            dcc.Graph(
+                id=f'distribution-plot-{i}',
+                figure=px.histogram(df, x=col, nbins=30, color_discrete_sequence=['skyblue'])
+            ) for i, col in enumerate(cgpa_cols.columns, start=1)
+        ])
     ])
 ])
 
