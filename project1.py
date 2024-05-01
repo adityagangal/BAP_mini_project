@@ -222,11 +222,30 @@
 # if __name__ == '__main__':
 #     app.run_server(debug=True)
 
-# ADITYA PLUS ME PLUS GAURI'S CODE 
+# ADITYA PLUS ME PLUS GAURI'S CODE + HRISHABH
 import pandas as pd
 import plotly.express as px
 from dash import Dash, html, dcc
 import plotly.graph_objs as go
+
+data = pd.read_csv('final_csv.csv')
+
+num_cols = ['CGPA-1','CGPA-2','CGPA-3','CGPA-4','CGPA-5','CGPA-6','CGPA-7']
+data2 = data[num_cols]
+# Convert object features to float, skipping NaN values
+for col in num_cols:
+    data2[col] = pd.to_numeric(data2[col], errors='coerce')
+
+# Create a distribution plot for each feature
+plt.figure(figsize=(16, 10))
+
+for feature in num_cols:
+    sns.displot(data2, x=feature, kde=True, color="skyblue", rug=True, bins=30)
+    plt.title(f"Distribution of {feature}")
+    plt.xlabel(feature)
+    plt.ylabel("Density")
+    plt.show()
+
 
 # Load data
 df = pd.read_csv('final_csv.csv')
