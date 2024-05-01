@@ -297,6 +297,9 @@ highest_cgpa_fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
 
 # Extract columns containing 'PASS/FAIL' in their name
 pass_fail_columns = [col for col in df.columns if 'PASS/FAIL' in col]
+# Visualization : Violin Plot of CGPA Distribution
+fig_violin_plot = px.violin(df.melt(value_vars=numeric_cols), y='value',
+                             facet_col='variable', box=True, title='CGPA Distribution (Violin Plot)')
 
 # Initialize the Dash app
 app = Dash(__name__)
@@ -351,6 +354,14 @@ app.layout = html.Div([
                 figure=px.pie(df, names=column, title=f'{column} Distribution')
             ) for i, column in enumerate(pass_fail_columns, start=1)
         ])
+    ]),
+    # Visualization : Violin Plot of CGPA Distribution
+    html.Div([
+        html.H2('CGPA Distribution (Violin Plot)'),
+        dcc.Graph(
+            id='cgpa-violin-plot',
+            figure=fig_violin_plot
+        )
     ])
 ])
 
